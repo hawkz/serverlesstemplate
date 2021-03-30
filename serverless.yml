@@ -1,0 +1,49 @@
+service: serverlesstemplate
+
+plugins:
+  - serverless-pseudo-parameters
+  - serverless-python-requirements
+  - serverless-wsgi
+
+provider:
+  name: aws
+  runtime: python3.8
+  memorySize: 128
+  timeout: 30
+  stage: ${opt:stage, "production"}
+  region: eu-west-2
+  logRetentionInDays: 30
+  apiGateway:
+    description: "Serverless template"
+#   environment:
+#     EXAMPLE_API_KEY: ${ssm:/serverless/serverlesstemplate-${opt:stage}/EXAMPLE_API_KEY~true}
+
+custom:
+  wsgi:
+    app: project.app
+    packRequirements: false
+  pythonRequirements:
+    fileName: requirements/base.txt
+    dockerizePip: non-linux
+    layer: true
+    slim: true
+    strip: false
+
+package:
+  exclude:
+    - "**"
+  include:
+    - project/**
+
+resources:
+  Description: "Serverless template"
+
+functions:
+  app:
+    description: "Serverless template"
+    handler: wsgi_handler.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+    layers:
+      - {Ref: PythonRequirementsLambdaLayer}
